@@ -12,3 +12,17 @@ String generateRandomString() {
 
   return result;
 }
+
+extension DisplayDate on DateTime {
+  String getDisplayDate(){
+    List<String> monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    int month = this.month;
+
+
+    return "${monthNames[month-1]} ${day}, ${year}";
+  }
+}

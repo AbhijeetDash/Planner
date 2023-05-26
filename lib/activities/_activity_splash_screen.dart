@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:planner/blocs/bloc_firebase_auth/bloc.dart';
+import 'package:planner/providers/_auth_state_provider.dart';
+import 'package:provider/provider.dart';
+// import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '_activity_home_screen.dart';
 
@@ -15,44 +17,53 @@ class ActivitySplashScreen extends StatefulWidget {
 
 class _ActivitySplashScreenState extends State<ActivitySplashScreen> {
   late Size size;
+  bool shouldShowButton = true;
+  bool isCalled = false;
+
+  void _handleSignIn(AuthStateProvider provider) {
+    // We need to check if the user has signedup or not.
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      if (provider.isAuthenticated) {
+        if (!isCalled) {
+          isCalled = true;
+          shouldShowButton = false;
+          setState(() {});
+          initiateGoogleSignUp().then((value) {
+            Navigator.of(context).pushReplacement(MaterialPageRoute(
+                builder: (context) => const ActivityHomeScreen()));
+          }).catchError((e) {
+            shouldShowButton = true;
+            setState(() {});
+          });
+        }
+      } else {
+        shouldShowButton = !context.read<AuthStateProvider>().isAuthenticated;
+        setState(() {});
+      }
+    });
+  }
 
   @override
   void didChangeDependencies() {
     size = MediaQuery.of(context).size;
-    context.read<AuthBloc>().add(CheckSignUpAuthEvent());
+    // Set the basic values in Provider.
+    context.read<AuthStateProvider>().getAuthenticationState();
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      shouldShowButton = !context.read<AuthStateProvider>().isAuthenticated;
+      setState(() {});
+    });
     super.didChangeDependencies();
   }
 
-  void initiateGoogleSignUp() {
-    context.read<AuthBloc>().add(SignUpAuthEvent());
+  Future<void> initiateGoogleSignUp() async {
+    await context.read<AuthStateProvider>().signUp();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is CheckAuthState) {
-          if (state.shouldLogin) {
-            // We should keep showing the loading and login user.
-            initiateGoogleSignUp();
-          }
-        }
-      },
-      builder: (context, state) {
-        if (state is SuccessAuthState) {
-          WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-            Navigator.of(context).pushReplacement(MaterialPageRoute(
-                builder: (context) => ActivityHomeScreen(user: state.user)));
-          });
-        }
-
-        bool shouldShowButton = false;
-        if (state is CheckAuthState) {
-          if (!state.shouldLogin) {
-            shouldShowButton = true;
-          }
-        }
-
+    return Consumer<AuthStateProvider>(
+      builder: (context, provider, child) {
+        _handleSignIn(provider);
         return SafeArea(
           child: Scaffold(
             body: SizedBox(
@@ -145,5 +156,29 @@ class _ActivitySplashScreenState extends State<ActivitySplashScreen> {
         );
       },
     );
+
+    // return BlocConsumer<AuthBloc, AuthState>(
+    //   listener: (context, state) {
+    //     if (state is CheckAuthState) {
+    //       if (state.shouldLogin) {
+    //         // We should keep showing the loading and login user.
+    //         initiateGoogleSignUp();
+    //       }
+    //     }
+    //   },
+    //   builder: (context, state) {
+    //     if (state is SuccessAuthState) {
+    //
+    //     }
+
+    //     bool shouldShowButton = false;
+    //     if (state is CheckAuthState) {
+    //       if (!state.shouldLogin) {
+    //         shouldShowButton = true;
+    //       }
+    //     }
+
+    //   },
+    // );
   }
 }

@@ -14,9 +14,6 @@ abstract class FirestoreService {
 
 class FirestoreServiceImpl extends FirestoreService {
   @override
-  void getTaskList() {}
-
-  @override
   Future<void> saveDocumentToFirestore(TaskModel task, String uid) async {
     try {
       CollectionReference collectionRef =
@@ -45,6 +42,7 @@ class FirestoreServiceImpl extends FirestoreService {
           FirebaseFirestore.instance.collection('${uid}_tasks');
       await collectionRef.doc(taskID).delete();
     } catch (e) {
+      print(e);
       rethrow;
     }
   }
